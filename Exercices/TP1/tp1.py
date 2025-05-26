@@ -25,10 +25,7 @@ else:
     print("Erreur de connexion à la base de données.")
     exit(1)
 
-import os
-import mysql.connector
-
-def execute_sql_scripts_from_folder(connection, folder_path="scripts"):
+def updateDb(connection, folder_path="scripts"):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     folder_path = os.path.join(base_dir, "scripts")
 
@@ -59,11 +56,18 @@ def execute_sql_scripts_from_folder(connection, folder_path="scripts"):
 
     cursor.close()
 
-execute_sql_scripts_from_folder(connection)
+updateDb(connection)
+
 prioriteMap = {
-    "1": "faible",
-    "2": "moyenne",
-    "3": "haute"
+    "1": "Faible",
+    "2": "Moyenne",
+    "3": "Haute"
+}
+
+statusMap = {
+    "1": "Ouvert",
+    "2": "En cours",
+    "3": "Fermé"
 }
 
 def addTicket(connection):
@@ -81,14 +85,13 @@ def addTicket(connection):
         priorite = None
         while priorite not in prioriteMap:
             print("Merci de saisir la priorité du ticket :")
-            print("1. Faible")
-            print("2. Moyenne")
-            print("3. Haute")
+            for key, label in prioriteMap.items():
+                print(f"{key}. {label}")
             priorite = input("Entrez le numéro de la priorité : ")
             if priorite not in prioriteMap:
                 print("Priorité invalide. Veuillez réessayer.")
 
-        cursor.execute("INSERT INTO tickets (titre, description, priorite) VALUES (%s, %s, %s)", (titre, description, prioriteMap.get(priorite)))
+        cursor.execute("INSERT INTO tickets (titre, description, priorite) VALUES (%s, %s, %s)", (titre, description, prioriteMap.get(priorite).lower()))
         connection.commit()
         print("Ticket ajouté avec succès.")
         displayMenu()
@@ -106,6 +109,65 @@ def displayTickets(connection):
             print("Aucun ticket trouvé.")
     displayMenu()
     
+def updateTicketPriority(connection):
+    ticketId = None
+    while ticketId is None or not ticketId.isdigit():
+        ticketId = input("Merci de saisir l'ID du ticket à modifier : ")
+        if not ticketId.isdigit():
+            print("ID invalide. Veuillez saisir un nombre entier.")
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM tickets WHERE id = %s", (ticketId,))
+            if cursor.fetchone() is None:
+                print("Aucun ticket trouvé avec cet ID. Veuillez réessayer.")
+                return
+        newPriority = None
+        while newPriority not in prioriteMap:
+            print("Merci de saisir la nouvelle priorité du ticket :")
+            for key, label in prioriteMap.items():
+                print(f"{key}. {label}")
+            newPriority = input("Entrez le numéro de la nouvelle priorité : ")
+            if newPriority not in prioriteMap:
+                print("Priorité invalide. Veuillez réessayer.")
+        
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE tickets SET priorite = %s WHERE id = %s", (prioriteMap.get(newPriority).lower(), ticketId))
+            connection.commit()
+            print("Priorité du ticket mise à jour avec succès.")
+    displayMenu()
+
+def updateTicketStatus(connection):
+    ticketId = None
+    while ticketId is None or not ticketId.isdigit():
+        ticketId = input("Merci de saisir l'ID du ticket à modifier : ")
+        if not ticketId.isdigit():
+            print("ID invalide. Veuillez saisir un nombre entier.")
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM tickets WHERE id = %s", (ticketId,))
+            if cursor.fetchone() is None:
+                print("Aucun ticket trouvé avec cet ID. Veuillez réessayer.")
+                return
+        newStatus = None
+        while newStatus not in statusMap:
+            print("Merci de saisir le nouveau statut du ticket :")
+            for key, label in statusMap.items():
+                print(f"{key}. {label}")
+            newStatus = input("Entrez le numéro du nouveau statut : ")
+            if newStatus not in statusMap:
+                print("Statut invalide. Veuillez réessayer.")
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE tickets SET statut = %s WHERE id = %s", (statusMap.get(newStatus).lower(), ticketId))
+            connection.commit()
+            print("Statut du ticket mis à jour avec succès.")
+    displayMenu()
+
+def deleteTicket(connection):
+    with connection.cursor() as cursor:
+        ticket_id = input("Merci de saisir l'ID du ticket à supprimer : ")
+        cursor.execute("DELETE FROM tickets WHERE id = %s", (ticket_id,))
+        connection.commit()
+        print("Ticket supprimé avec succès.")
+    displayMenu()
+    
 def exitProgram():
     connection.close()
     exit(0)
@@ -113,13 +175,24 @@ def exitProgram():
 def displayMenu():
     print("1. Afficher les tickets")
     print("2. Ajouter un ticket")
-    print("3. Quitter")
+    print("3. Modifier la priorité d'un ticket")
+    print("4. Modifier le statut d'un ticket")
+    print("5. Supprimer un ticket")
+    print("6. Quitter")
     choice = input("Veuillez choisir une option : ")
     if choice == "1":
         displayTickets(connection)
     elif choice == "2":
         addTicket(connection)
     elif choice == "3":
+        updateTicketPriority(connection)
+        displayMenu()
+    elif choice == "4":
+        updateTicketStatus(connection)
+        displayMenu()
+    elif choice == "5":
+        deleteTicket(connection)
+    elif choice == "6":
         exitProgram()
     else:
         print("Choix invalide. Veuillez réessayer.")
