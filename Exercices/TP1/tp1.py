@@ -15,7 +15,7 @@ connection = mysql.connector.connect(
     auth_plugin='mysql_native_password'
 )
 if connection.is_connected():
-    db_Info = connection.get_server_info()
+    db_Info = connection.server_info
     print("Connecté à MySQL, version :", db_Info)
     with connection.cursor() as cursor:
         cursor.execute("SELECT DATABASE();")
@@ -25,6 +25,41 @@ else:
     print("Erreur de connexion à la base de données.")
     exit(1)
 
+import os
+import mysql.connector
+
+def execute_sql_scripts_from_folder(connection, folder_path="scripts"):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    folder_path = os.path.join(base_dir, "scripts")
+
+    scripts = sorted([
+        f for f in os.listdir(folder_path)
+        if f.endswith(".sql")
+    ])
+
+    cursor = connection.cursor()
+    
+    for script_file in scripts:
+        script_path = os.path.join(folder_path, script_file)
+        print(f"\nExécution du script : {script_file}")
+        
+        with open(script_path, "r", encoding="utf-8") as file:
+            sql_commands = file.read()
+        
+        try:
+            for statement in sql_commands.strip().split(";"):
+                if statement.strip():
+                    cursor.execute(statement)
+            connection.commit()
+            print("Terminé avec succès.")
+        except mysql.connector.Error as err:
+            print(f"Erreur dans {script_file} : {err}")
+            connection.rollback()
+            exit(1)
+
+    cursor.close()
+
+execute_sql_scripts_from_folder(connection)
 prioriteMap = {
     "1": "faible",
     "2": "moyenne",
