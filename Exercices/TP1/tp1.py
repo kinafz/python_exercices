@@ -6,13 +6,13 @@ import os
 
 load_dotenv()
 
-password=os.getenv('DATABASE_PASSWORD')
 connection = mysql.connector.connect(
-    host='localhost',
-    user='afilez',
-    password=password,
-    database='afilez',
-    auth_plugin='mysql_native_password'
+    host='mysql',
+    user=os.getenv('MYSQL_USER'),
+    password=os.getenv('MYSQL_PASSWORD'),
+    database=os.getenv('MYSQL_DATABASE'),
+    auth_plugin='mysql_native_password',
+    port=3306
 )
 if connection.is_connected():
     db_Info = connection.server_info
