@@ -180,6 +180,36 @@ def displayLivres(connection):
     finally:
         cursor.close()
         
+def displayHistoryForuser(connection):
+    idUtilisateur = None
+    while idUtilisateur is None:
+        idUtilisateur = input("Merci de saisir l'ID de l'utilisateur : ")
+        if not idUtilisateur.isdigit():
+            print("L'ID de l'utilisateur doit être un nombre. Veuillez réessayer.")
+            idUtilisateur = None
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+            SELECT
+                e.id,
+                l.titre,
+                e.date_emprunt,
+                e.date_retour
+            FROM emprunts e
+            INNER JOIN livres l ON l.id = e.id_livre
+            WHERE e.id_utilisateur = %s
+            ORDER BY e.date_emprunt DESC
+        """, (idUtilisateur,))
+        emprunts = cursor.fetchall()
+        if emprunts:
+            print(tabulate(emprunts, headers=["ID", "Livre", "Date d'emprunt", "Date de retour"], tablefmt="fancy_grid"))
+        else:
+            print(f"Aucun emprunt trouvé pour l'utilisateur ID {idUtilisateur}.")
+    except mysql.connector.Error as err:
+        print(f"Erreur lors de la récupération des emprunts : {err}")
+    finally:
+        cursor.close()
+        
 def displayMenu():
     print("1. Ajouter un utilisateur")
     print("2. Afficher les utilisateurs")
@@ -187,7 +217,8 @@ def displayMenu():
     print("4. Afficher les livres")
     print("5. Enregistrer un emprunt")
     print("6. Afficher les emprunts en cours")
-    print("7. Quitter")
+    print("7. Afficher l'historique des emprunts d'un utilisateur")
+    print("8. Quitter")
     choice = input("Veuillez choisir une option : ")
     if choice == "1":
         addUser(connection)
@@ -201,7 +232,9 @@ def displayMenu():
         addEmprunt(connection)
     elif choice == "6":
         displayEmprunts(connection)
-    elif choice == "5":
+    elif choice == "7":
+        displayHistoryForuser(connection)
+    elif choice == "8":
         print("Au revoir !")
         connection.close()
         exit(0)
