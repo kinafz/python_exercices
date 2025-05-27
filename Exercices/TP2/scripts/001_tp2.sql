@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS utilisateurs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nom VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS livres (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    titre VARCHAR(50) NOT NULL,
+    auteur VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS emprunts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    id_utilisateur INT NOT NULL,
+    id_livre INT NOT NULL,
+    date_emprunt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_retour DATETIME,
+    FOREIGN KEY (id_utilisateur) REFERENCES utilisateurs(id),
+    FOREIGN KEY (id_livre) REFERENCES livres(id)
+);
