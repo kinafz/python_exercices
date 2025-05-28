@@ -11,7 +11,7 @@ import argparse
 load_dotenv()
 
 connection = mysql.connector.connect(
-    host='mysql',
+    host=os.getenv('MYSQL_HOST', 'localhost'),
     user=os.getenv('MYSQL_USER'),
     password=os.getenv('MYSQL_PASSWORD'),
     database=os.getenv('MYSQL_DATABASE'),
