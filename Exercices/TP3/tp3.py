@@ -172,6 +172,31 @@ def status(env_name):
         else:
             print("No deployment found for this environment.")
             
+def display_logs_mongo():
+    try:
+        cursor = logs_collection.find().sort("timestamp", pymongo.DESCENDING)
+        logs = list(cursor)
+        if not logs:
+            print("No logs found.")
+            return
+
+        log_data = []
+        for log in logs:
+            log_data.append([
+                log.get("action"),
+                log.get("message", ""),
+                log.get("deploy_id", ""),
+                log.get("etat_initial", ""),
+                log.get("etat_final", ""),
+                log.get("source", ""),
+                log.get("timestamp")
+            ])
+
+        headers = ["Action", "Message", "Deploy ID", "Etat Initial", "Etat Final", "Source", "Timestamp"]
+        print(tabulate(log_data, headers=headers, tablefmt="grid"))
+    except Exception as e:
+        print(f"Error retrieving logs: {e}")
+            
 def display_menu():
     while True:
         print("\n=== MENU ===")
@@ -180,7 +205,8 @@ def display_menu():
         print("3. Valider et exécuter un déploiement")
         print("4. Voir le statut d'un environnement")
         print("5. Annuler un déploiement")
-        print("6. Quitter")
+        print("6. Afficher les logs de déploiement")
+        print("7. Quitter")
         choice = input("Choisissez une option : ")
 
         if choice == "1":
@@ -201,6 +227,8 @@ def display_menu():
             deploy_id = int(input("ID du déploiement à annuler : "))
             rollback(deploy_id)
         elif choice == "6":
+            display_logs_mongo()
+        elif choice == "7":
             print("Au revoir !")
             break
         else:
@@ -237,6 +265,9 @@ if __name__ == '__main__':
 
     rollback_parser = subparsers.add_parser('rollback')
     rollback_parser.add_argument('--deploy-id', type=int)
+    
+    rollback_parser = subparsers.add_parser('logs')
+    rollback_parser.add_argument('--mongo', action='store_true')
 
     args = parser.parse_args()
 
@@ -250,6 +281,11 @@ if __name__ == '__main__':
         status(args.env)
     elif args.command == 'rollback':
         rollback(args.deploy_id)
+    elif args.command == 'logs':
+        if args.mongo:
+            display_logs_mongo()
+        else:
+            print("Option invalide pour les logs. Utilisez --mongo pour afficher les logs MongoDB.")
     elif args.command is None:
         display_menu()
     else:
