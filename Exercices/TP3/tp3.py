@@ -7,8 +7,27 @@ from datetime import datetime
 import time
 import random
 import argparse
+import pymongo
+from pymongo.errors import ConnectionFailure, ConfigurationError, InvalidURI
 
 load_dotenv()
+
+try:
+    mongoClient = pymongo.MongoClient(
+        host=os.getenv('MONGO_HOST', 'localhost'),
+        port=27017,
+    )
+    mongo_db = mongoClient[os.getenv('MONGO_DATABASE')]
+    logs_collection = mongo_db['audit_logs']
+except (ConnectionFailure, ConfigurationError, InvalidURI) as conn_err:
+    print(f"Erreur de connexion à MongoDB : {conn_err}")
+    logs_collection = None
+except ValueError as ve:
+    print(f"Erreur de configuration : {ve}")
+    logs_collection = None
+except Exception as e:
+    print(f"Erreur inconnue : {e}")
+    logs_collection = None
 
 connection = mysql.connector.connect(
     host=os.getenv('MYSQL_HOST', 'localhost'),
@@ -26,9 +45,8 @@ if connection.is_connected():
         record = cursor.fetchone()
         print("Base de données actuelle :", record)
 else:
-    print("Erreur de connexion à la base de données.")
+    print("Erreur de connexion à la base de données MySQL.")
     exit(1)
-
 
 def updateDb(connection, folder_path="scripts"):
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -61,10 +79,11 @@ def updateDb(connection, folder_path="scripts"):
 updateDb(connection)
 
 def log_action(action, message):
-    with connection.cursor() as cursor:
-        cursor.execute("INSERT INTO audit_logs (action, message, timestamp) VALUES (%s, %s, %s)",
-                  (action, message, datetime.now()))
-        connection.commit()
+    logs_collection.insert_one({
+        "action": action,
+        "message": message,
+        "timestamp": datetime.now()
+    })
 
 def create_release(version, tag):
     with connection.cursor() as cursor:
