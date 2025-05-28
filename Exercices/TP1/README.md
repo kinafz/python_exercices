@@ -1,4 +1,4 @@
-# Run the TP2 project
+# Run the TP1 project
 
 ## Build
 
@@ -13,7 +13,7 @@ docker compose up --build
 ## Enter the application
 
 ```bash
-docker logs tp2-runner && docker attach tp2-runner
+docker logs tp1-runner && docker attach tp1-runner
 ```
 
 ## Cleanup

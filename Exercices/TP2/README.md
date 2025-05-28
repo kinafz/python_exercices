@@ -1,4 +1,4 @@
-# Run the TP1 project
+# Run the TP2 project
 
 ## Build
 

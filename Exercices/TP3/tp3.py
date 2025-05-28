@@ -124,10 +124,11 @@ def validate_and_execute(deploy_id):
 def status(env_name):
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT e.nom, r.version, d.etat, d.date_deploiement
+            SELECT
+                e.nom, r.version, d.etat, d.date_deploiement
             FROM deploiements d
-            INNER JOIN releases r ON d.id_release = r.id
-            INNER JOIN environnements e ON d.id_env = e.id
+                INNER JOIN releases r ON d.id_release = r.id
+                INNER JOIN environnements e ON d.id_env = e.id
             WHERE e.nom = %s
             ORDER BY d.date_deploiement DESC
             LIMIT 1
