@@ -78,10 +78,10 @@ def updateDb(connection, folder_path="scripts"):
 
 updateDb(connection)
 
-def log_action(action, message):
+def log_action(action, **kwargs):
     logs_collection.insert_one({
         "action": action,
-        "message": message,
+        **kwargs,
         "timestamp": datetime.now()
     })
 
@@ -125,18 +125,32 @@ def validate_and_execute(deploy_id):
 
             if random.choice([True, False]):
                 cursor.execute("UPDATE deploiements SET etat = 'réussi' WHERE id = %s", (deploy_id,))
-                log_action("DEPLOY_SUCCESS", f"Deployment {deploy_id} succeeded.")
+                log_action("DEPLOY_SUCCESS",
+                           message=f"Deployment {deploy_id} succeeded.",
+                           deploy_id=deploy_id,
+                           etat_initial=state,
+                           etat_final='réussi',
+                           source='cli')
                 print("Deployment successful.")
             else:
                 cursor.execute("UPDATE deploiements SET etat = 'annulé' WHERE id = %s", (deploy_id,))
-                log_action("DEPLOY_FAIL", f"Deployment {deploy_id} failed and was rolled back.")
+                log_action("DEPLOY_FAIL",
+                           message=f"Deployment {deploy_id} failed and was rolled back.",
+                           deploy_id=deploy_id,
+                           etat_initial=state,
+                           etat_final='annulé',
+                           source='cli')
                 print("Deployment failed and rolled back.")
 
             connection.commit()
     except Exception as e:
         connection.rollback()
-        log_action("ERROR", f"Transaction error: {str(e)}")
-        print("Error during deployment.")
+        log_action("ERROR",
+            message=f"Error during deployment.",
+            deploy_id=deploy_id,
+            etat_initial=state,
+            etat_final='annulé',
+            source='cli')
     finally:
         connection.close()
         
@@ -195,7 +209,11 @@ def display_menu():
 def rollback(deploy_id):
     with connection.cursor() as cursor:
         cursor.execute("UPDATE deploiements SET etat = 'annulé' WHERE id = %s", (deploy_id,))
-        log_action("ROLLBACK", f"Rollback deployment {deploy_id}.")
+        log_action("ROLLBACK",
+            message=f"Rollback deployment {deploy_id}.",
+            deploy_id=deploy_id,
+            etat_final='annulé',
+            source='cli')
         connection.commit()
         print("Rollback executed.")
         

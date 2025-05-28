@@ -76,11 +76,45 @@ FOREIGN KEY (id_env) REFERENCES environnements(id)
 
 ---
 
+## **MongoDB :**
+
+Créer une **collection `audit_logs`** dans MongoDB pour :
+
+* **Dupliquer les entrées de log techniques** au format JSON
+* Y inclure des **métadonnées étendues** : temps d’exécution, déploiement concerné, environnement, erreurs détaillées
+
+### Exemple de document MongoDB :
+
+```
+{
+  "action": "rollback",
+  "deploy_id": 3,
+  "etat_initial": "en_cours",
+  "etat_final": "annulé",
+  "env": "staging",
+  "timestamp": "2025-05-28T14:02:00Z",
+  "details": "Erreur réseau simulée",
+  "source": "cli"
+}
+```
+
+
 ## **Fonctionnalités CLI à fournir :**
+
+Menu
+
+1 - release
+    version,
+    tag
+2 - deploy
+3 - validate
+4 - status
+5 - rollback
 
 * `python main.py release --create 1.0.2 --tag v1.0.2`
 * `python main.py deploy --release 1 --env prod`
 * `python main.py validate --deploy-id 3`
 * `python main.py status --env prod`
 * `python main.py rollback --deploy-id 3`
+* `python main.py logs --mongo` → affiche les logs MongoDB
 
